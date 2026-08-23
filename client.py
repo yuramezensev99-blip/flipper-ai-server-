@@ -1,19 +1,40 @@
 import requests
 import json
-import sys
 
 with open("config.json") as f:
-    cfg = json.load(f)
+    config = json.load(f)
 
-URL = f"http://{cfg['host']}:{cfg['port']}"
+SERVER = config["server"]
 
-def status():
+def chat(message):
     try:
-        r = requests.get(URL + "/status", timeout=5)
-        print(r.json())
-    except Exception as e:
-        print("Ошибка:", e)
+        response = requests.post(
+            SERVER + "/chat",
+            json={
+                "message": message
+            },
+            timeout=30
+        )
 
-if len(sys.argv) > 1:
-    if sys.argv[1] == "status":
-        status()
+        response.raise_for_status()
+
+        data = response.json()
+        return data
+
+    except Exception as e:
+        return {
+            "error": str(e)
+        }
+
+print("Flipper Client запущен")
+print("Введите exit для выхода\n")
+
+while True:
+    msg = input("Ты: ")
+
+    if msg.lower() == "exit":
+        break
+
+    result = chat(msg)
+
+    print("Ответ:", result)
