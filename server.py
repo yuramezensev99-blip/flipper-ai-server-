@@ -1,75 +1,40 @@
-from fastapi import FastAPI, UploadFile, File
 import requests
+import json
 
-app = FastAPI(title="Flipper AI Core")
+with open("config.json") as f:
+    config = json.load(f)
 
-OLLAMA_URL = "вставьте ip адрес ollama server /api/chat"
-OLLAMA_TAGS = "вставьте ip адрес ollama server/api/tags"
+SERVER = config["server"]
 
-MODEL = "название модели "
+def chat(message):
+    try:
+        response = requests.post(
+            SERVER + "/chat",
+            json={
+                "message": message
+            },
+            timeout=30
+        )
 
-@app.get("/")
-def home():
-    return {
-        "status": "Flipper AI Core online"
-    }
+        response.raise_for_status()
 
-@app.get("/test")
-def test():
-    return {
-        "api": "ok"
-    }
+        data = response.json()
+        return data
 
-@app.get("/models")
-def models():
-    r = requests.get(OLLAMA_TAGS)
-
-    return r.json()
-
-@app.post("/chat")
-def chat(data: dict):
-
-    message = data.get("message", "")
-
-    if not message:
+    except Exception as e:
         return {
-            "error": "empty message"
+            "error": str(e)
         }
 
-    response = requests.post(
-        OLLAMA_URL,
-        json={
-            "model": MODEL,
-            "messages": [
-                {
-                    "role": "system",
-                    "content":
-                    "Ты локальный AI ассистент Flipper. Отвечай на русском кратко и по делу."
-                },
-                {
-                    "role": "user",
-                    "content": message
-                }
-            ],
-            "stream": False
-        },
-        timeout=120
-    )
+print("Flipper Client запущен")
+print("Введите exit для выхода\n")
 
-    result = response.json()
+while True:
+    msg = input("Ты: ")
 
-    return {
-        "answer": result["message"]["content"]
-    }
+    if msg.lower() == "exit":
+        break
 
-@app.post("/vision")
-def vision():
-    return {
-        "status": "vision module placeholder"
-    }
+    result = chat(msg)
 
-@app.post("/flipper")
-def flipper():
-    return {
-        "status": "flipper module placeholder"
-    }
+    print("Ответ:", result)
