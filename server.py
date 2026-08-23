@@ -1,40 +1,37 @@
+from fastapi import FastAPI
 import requests
-import json
 
-with open("config.json") as f:
-    config = json.load(f)
+app = FastAPI()
 
-SERVER = config["server"]
+OLLAMA_URL = "http://127.0.0.1:11434/api/chat"
 
-def chat(message):
-    try:
-        response = requests.post(
-            SERVER + "/chat",
-            json={
-                "message": message
-            },
-            timeout=30
-        )
 
-        response.raise_for_status()
+@app.get("/")
+def home():
+    return {"status": "Flipper AI Server OK"}
 
-        data = response.json()
-        return data
 
-    except Exception as e:
-        return {
-            "error": str(e)
-        }
+@app.post("/chat")
+def chat(data: dict):
+    message = data.get("message", "")
 
-print("Flipper Client запущен")
-print("Введите exit для выхода\n")
+    response = requests.post(
+        OLLAMA_URL,
+        json={
+            "model": "qwen3.5",
+            "messages": [
+                {
+                    "role": "user",
+                    "content": message
+                }
+            ],
+            "stream": False
+        },
+        timeout=120
+    )
 
-while True:
-    msg = input("Ты: ")
+    result = response.json()
 
-    if msg.lower() == "exit":
-        break
-
-    result = chat(msg)
-
-    print("Ответ:", result)
+    return {
+        "answer": result["message"]["content"]
+    }
